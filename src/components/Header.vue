@@ -173,6 +173,7 @@ export default {
         console.error('Error al obtener tipoUsuario:', err);
       }
     },
+
     handleSearch() {
       const term = this.search.trim().toLowerCase();
       if (!term) {
@@ -192,6 +193,7 @@ export default {
     },
     selectBook(book) {
       this.search = book.titulo;
+      this.search = '';
       this.searchResults = [];
       const slug = book.titulo.toLowerCase().replace(/\s+/g, '-');
       this.$router.push({ name: 'BookDetailView', params: { title: slug } });
