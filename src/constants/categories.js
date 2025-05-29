@@ -1,2 +1,26 @@
 // categories.js
-export const CATEGORIES = ['Fantasía', 'Ciencia ficción', 'Romance', 'Terror', 'Aventura', 'Histórico'];
+export const CATEGORIES = [
+    'Fantasía',
+    'Ciencia ficción',
+    'Terror',
+    'Aventura',
+    'Misterio',
+    'Thriller',
+    'Drama',
+    'Humor',
+    'Distopía',
+    'Clásicos',
+    'Cuento',
+    'Suspenso',
+    'Filosofía',
+    'Historia',
+    'Educativo',
+    'Mitología',
+    'Crimen',
+    'Música',
+    'Manga',
+    'Deportes',
+    'Superación',
+    'Arte',
+    'Partituras'
+];

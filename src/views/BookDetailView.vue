@@ -47,7 +47,7 @@
               class="py-3 hover:bg-gray-100 transition rounded"
             >
               <router-link
-                :to="`/libro/${book.titulo.toLowerCase().replace(/\s+/g, '-')}/capitulo/${index}`"
+                :to="`/libro/${book.titulo.toLowerCase().replace(/\s+/g, '-')}/${index}`"
                 class="text-blue-600 hover:underline"
               >
                 {{ chapter.title }} <!-- Cambiar a español -->
@@ -71,16 +71,18 @@
             </button>
           </form>
 
-          <div v-if="comments.length === 0" class="text-gray-500">Aún no hay comentarios.</div>
+          <div v-if="enrichedComments.length === 0" class="text-gray-500">Aún no hay comentarios.</div>
           <ul class="space-y-3">
             <li
-              v-for="comment in sortedComments"
+              v-for="comment in enrichedComments"
               :key="comment.id"
               @click="handleCommentClick(comment)"
               class="bg-gray-50 p-3 rounded border cursor-pointer hover:bg-red-50 transition"
             >
               <p class="text-gray-800">{{ comment.text }}</p>
-              <p class="text-sm text-gray-500">por {{ comment.user }} · {{ formatDate(comment.timestamp) }}</p>
+              <p class="text-sm text-gray-500">
+                por {{ comment.user }} · {{ formatDate(comment.timestamp) }}
+              </p>
             </li>
           </ul>
         </div>
@@ -94,7 +96,7 @@
 <script>
 import { db } from '../firebase';
 import { ref as dbRef, get, onValue, update, set, remove } from 'firebase/database';
-import { getAuth, onAuthStateChanged  } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { capitalize } from 'vue';
 
 export default {
@@ -105,10 +107,16 @@ export default {
       bookKey: null,
       newComment: '',
       comments: [],
+      enrichedComments: [],
       user: null,
       isAdmin: false,
       isFavorite: false,
     };
+  },
+  computed: {
+    chapters() {
+      return this.book?.capitulos || [];
+    }
   },
   async mounted() {
     try {
@@ -128,17 +136,19 @@ export default {
           this.bookKey = key;
           this.comments = book.comentarios || [];
 
+          await this.loadUsernames();
+
           const auth = getAuth();
           onAuthStateChanged(auth, async (user) => {
             if (user) {
               this.user = user;
 
               const userRef = dbRef(db, `Usuarios/${user.uid}`);
-                  const userSnap = await get(userRef);
-                  if (userSnap.exists()) {
-                    const userData = userSnap.val();
-                    this.isAdmin = userData.tipoUsuario === 'admin';
-                  }
+              const userSnap = await get(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.val();
+                this.isAdmin = userData.tipoUsuario === 'admin';
+              }
 
               const favRef = dbRef(db, `Usuarios/${user.uid}/favoritos/${this.book.id}`);
               onValue(favRef, (snap) => {
@@ -154,15 +164,27 @@ export default {
       console.error('Error al cargar el libro:', err);
     }
   },
-  computed: {
-    chapters() {
-      return this.book?.capitulos || [];
-    },
-    sortedComments() {
-      return [...this.comments].sort((a, b) => b.timestamp - a.timestamp);
-    },
-  },
   methods: {
+    async loadUsernames() {
+      const promises = this.comments.map(async (comment) => {
+        if (!comment.uid) {
+          return { ...comment, user: 'Anónimo' };
+        }
+
+        try {
+          const snap = await get(dbRef(db, `Usuarios/${comment.uid}`));
+          const userData = snap.exists() ? snap.val() : {};
+          return {
+            ...comment,
+            user: capitalize(userData.nombre || 'Usuario'),
+          };
+        } catch {
+          return { ...comment, user: 'Usuario' };
+        }
+      });
+
+      this.enrichedComments = await Promise.all(promises);
+    },
     formatDate(timestamp) {
       const date = new Date(timestamp);
       return date.toLocaleDateString('es-ES', {
@@ -173,108 +195,96 @@ export default {
         minute: '2-digit',
       });
     },
+
     async toggleFavorite() {
-    if (!this.user || !this.book?.id) return;
+      if (!this.user || !this.book?.id) return;
 
-    const favRef = dbRef(db, `Usuarios/${this.user.uid}/favoritos/${this.book.id}`);
-    const bookRef = dbRef(db, `Libros/${this.book.id}`);
+      const favRef = dbRef(db, `Usuarios/${this.user.uid}/favoritos/${this.book.id}`);
+      const bookRef = dbRef(db, `Libros/${this.book.id}`);
 
-    try {
-      const bookSnap = await get(bookRef);
-      const currentFavoritos = bookSnap.val()?.favoritos || 0;
-
-      if (this.isFavorite) {
-        // Quitar de favoritos
-        await remove(favRef);
-        const nuevosFavoritos = Math.max(0, currentFavoritos - 1);
-        await update(bookRef, { favoritos: nuevosFavoritos });
-        this.isFavorite = false;
-      } else {
-        // Marcar como favorito
-        await set(favRef, {
-          titulo: this.book.titulo,
-          portada: this.book.portada || '',
-          marcadoEn: Date.now()
-        });
-        const nuevosFavoritos = currentFavoritos + 1;
-        await update(bookRef, { favoritos: nuevosFavoritos });
-        this.isFavorite = true;
-      }
-
-      // Actualiza el número local si deseas mostrarlo en la vista (opcional)
-      this.book.favoritos = this.isFavorite ? currentFavoritos + 1 : Math.max(0, currentFavoritos - 1);
-
-    } catch (err) {
-      console.error('Error al actualizar favoritos:', err);
-    }
-  },
-    async addComment() {
-    const text = this.newComment.trim();
-    if (!text || !this.bookKey) return;
-
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-
-    let userName = 'Anónimo';
-
-    if (currentUser) {
-      const userRef = dbRef(db, `Usuarios/${currentUser.uid}`);
       try {
-        const userSnap = await get(userRef);
-        if (userSnap.exists()) {
-          const userData = userSnap.val();
-          userName = userData.nombre || currentUser.email || 'Anónimo';
+        const bookSnap = await get(bookRef);
+        const currentFavoritos = bookSnap.val()?.favoritos || 0;
+
+        if (this.isFavorite) {
+          await remove(favRef);
+          const nuevosFavoritos = Math.max(0, currentFavoritos - 1);
+          await update(bookRef, { favoritos: nuevosFavoritos });
+          this.isFavorite = false;
+        } else {
+          await set(favRef, {
+            titulo: this.book.titulo,
+            portada: this.book.portada || '',
+            marcadoEn: Date.now(),
+          });
+          const nuevosFavoritos = currentFavoritos + 1;
+          await update(bookRef, { favoritos: nuevosFavoritos });
+          this.isFavorite = true;
         }
+
+        this.book.favoritos = this.isFavorite
+          ? currentFavoritos + 1
+          : Math.max(0, currentFavoritos - 1);
       } catch (err) {
-        console.warn('Error obteniendo nombre de usuario:', err);
+        console.error('Error al actualizar favoritos:', err);
       }
-    }
+    },
 
-    const newComment = {
-      id: Date.now().toString(),
-      text,
-      user: capitalize(userName),
-      timestamp: Date.now(),
-      uid: currentUser?.uid || null,
-    };
+    async addComment() {
+      const text = this.newComment.trim();
+      if (!text || !this.bookKey) return;
 
-    const updatedComments = [...this.comments, newComment];
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
 
-    try {
-      await update(dbRef(db, `Libros/${this.bookKey}`), {
-        comentarios: updatedComments,
-      });
+      const newComment = {
+        id: Date.now().toString(),
+        text,
+        uid: currentUser?.uid || null,
+        timestamp: Date.now(),
+      };
 
-      this.comments = updatedComments;
-      this.newComment = '';
-    } catch (err) {
-      console.error('Error al guardar el comentario:', err);
-      alert('No se pudo guardar el comentario.');
-    }
-  },
-  async deleteComment(commentId) {
-    const updatedComments = this.comments.filter(c => c.id !== commentId);
+      const updatedComments = [...this.comments, newComment];
 
-    try {
-      await update(dbRef(db, `Libros/${this.bookKey}`), {
-        comentarios: updatedComments,
-      });
-      this.comments = updatedComments;
-    } catch (err) {
-      console.error('Error al eliminar el comentario:', err);
-      alert('No se pudo eliminar el comentario.');
-    }
-  },
-  handleCommentClick(comment) {
-    const isOwner = this.user && comment.uid === this.user.uid;
+      try {
+        await update(dbRef(db, `Libros/${this.bookKey}`), {
+          comentarios: updatedComments,
+        });
 
-    if (this.isAdmin || isOwner) {
-      const confirmed = confirm('¿Quieres eliminar este comentario?');
-      if (confirmed) {
-        this.deleteComment(comment.id);
+        this.comments = updatedComments;
+        this.newComment = '';
+        await this.loadUsernames(); // vuelve a enriquecer los comentarios
+      } catch (err) {
+        console.error('Error al guardar el comentario:', err);
+        alert('No se pudo guardar el comentario.');
       }
-    }
-  },
+    },
+
+    async deleteComment(commentId) {
+      const updatedComments = this.comments.filter((c) => c.id !== commentId);
+
+      try {
+        await update(dbRef(db, `Libros/${this.bookKey}`), {
+          comentarios: updatedComments,
+        });
+        this.comments = updatedComments;
+        await this.loadUsernames();
+      } catch (err) {
+        console.error('Error al eliminar el comentario:', err);
+        alert('No se pudo eliminar el comentario.');
+      }
+    },
+
+    handleCommentClick(comment) {
+      const isOwner = this.user && comment.uid === this.user.uid;
+
+      if (this.isAdmin || isOwner) {
+        const confirmed = confirm('¿Quieres eliminar este comentario?');
+        if (confirmed) {
+          this.deleteComment(comment.id);
+        }
+      }
+    },
   },
 };
 </script>

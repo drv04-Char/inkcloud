@@ -17,7 +17,7 @@ const routes = [
     { path: '/crear-libro', name: 'crear-libro', component: CreateBookView, meta: { requiresAdmin: true } },
     { path: '/editar-libro/:id', name: 'editar-libro', component: EditarBookView, meta: { requiresAdmin: true } },
     { path: '/perfil', name: 'perfil', component: UserProfile, meta: { requiresAuth: true } },
-    { path: '/libro/:bookId/capitulo/:chapterId', component: ChapterReader },
+    { path: '/libro/:bookId/:chapterId', component: ChapterReader },
 ]
 
 const router = createRouter({

@@ -55,7 +55,7 @@
         chapters: [{ title: '', file: null }],
         coverFile: null,
         selectedCategories: [],
-        categories: CATEGORIES,
+        categories: [...CATEGORIES].sort((a, b) => a.localeCompare(b)),
       };
     },
     methods: {

@@ -16,6 +16,7 @@
       </div>
 
       <button
+        v-if="user"
         @click="downloadPDF"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full md:w-auto"
       >
@@ -74,6 +75,8 @@
 <script>
 import { db } from '../firebase';
 import { ref as dbRef, get } from 'firebase/database';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase';
 
 export default {
   data() {
@@ -85,10 +88,15 @@ export default {
       currentIndex: 0,
       pdfUrl: '',
       windowWidth: window.innerWidth,
+      user: null,
     };
   },
   mounted() {
     window.addEventListener('resize', this.handleResize);
+
+    onAuthStateChanged(auth, (currentUser) => {
+      this.user = currentUser;
+    });
 
     const { bookId: bookSlug, chapterId } = this.$route.params;
 
@@ -169,7 +177,7 @@ export default {
     },
     navigateToChapter(chapterId) {
       const bookSlug = this.$route.params.bookId;
-      this.$router.push(`/libro/${bookSlug}/capitulo/${chapterId}`);
+      this.$router.push(`/libro/${bookSlug}/${chapterId}`);
     },
     async downloadPDF() {
       if (!this.pdfUrl) return;

@@ -88,7 +88,7 @@ export default {
       existingCover: '',
       coverFile: null,
       selectedCategories: [],
-      categories: CATEGORIES,
+      categories: [...CATEGORIES].sort((a, b) => a.localeCompare(b)),
     };
   },
   async mounted() {
@@ -193,7 +193,6 @@ export default {
     },
     async deleteBook() {
       if (confirm('¿Estás seguro de que quieres eliminar este libro?')) {
-        const db = getDatabase();
         await remove(ref(db, `Libros/${this.bookId}`));
         alert('Libro eliminado');
         this.$router.push('/');

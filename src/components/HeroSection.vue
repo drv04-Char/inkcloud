@@ -42,14 +42,14 @@ onMounted(() => {
 
     const favoritoIds = Object.keys(favSnap.val());
 
-    // Obtener libros
+    // Obtener todos los libros
     const booksRef = dbRef(db, 'Libros');
     const booksSnap = await get(booksRef);
     if (!booksSnap.exists()) return;
 
     const allBooks = booksSnap.val();
 
-    // Extraer categorías de favoritos
+    // Extraer categorías favoritas
     const favoriteCategories = new Set();
     favoritoIds.forEach(id => {
       const libro = allBooks[id];
@@ -58,15 +58,14 @@ onMounted(() => {
       }
     });
 
-    // Filtrar recomendaciones
+    // Filtrar libros recomendados
     const recomendaciones = Object.entries(allBooks)
-      .filter(([id, libro]) => {
-        return (
-          !favoritoIds.includes(id) &&
-          libro?.categorias?.some(cat => favoriteCategories.has(cat))
-        );
-      })
-      .slice(0, 5)
+      .filter(([id, libro]) =>
+        !favoritoIds.includes(id) &&
+        libro?.categorias?.some(cat => favoriteCategories.has(cat))
+      )
+      .sort(([, a], [, b]) => (b.favoritos || 0) - (a.favoritos || 0)) // Ordenar por "favoritos" descendente
+      .slice(0, 4)
       .map(([id, libro]) => ({ id, ...libro }));
 
     recommendedBooks.value = recomendaciones;

@@ -14,7 +14,7 @@
           >
             <option value="">Seleccione una categoría</option>
             <option
-              v-for="(categoria, index) in categorias"
+              v-for="(categoria, index) in categories"
               :key="index"
               :value="categoria"
             >
@@ -36,6 +36,7 @@
         <div>
           <label class="block mb-1 font-medium">Ordenar por</label>
           <select v-model="sortBy" class="w-full border rounded p-2">
+            <option value="alfabetico">Alfabéticamente (A-Z)</option>
             <option value="fecha">Fecha de creación</option>
             <option value="favoritos">Favoritos</option>
             <option value="capitulos">Cantidad de capítulos</option>
@@ -44,17 +45,17 @@
       </div>
 
       <!-- Resultados -->
-      <div class="md:col-span-3 space-y-4">
+      <div class="md:col-span-4 space-y-4">
         <h2 class="text-2xl font-bold">Resultados</h2>
         <div v-if="filteredBooks.length === 0" class="text-gray-500">No hay resultados.</div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div
             v-for="book in sortedBooks"
             :key="book.id"
             class="bg-white border rounded-xl shadow hover:shadow-lg transition p-3"
           >
             <router-link :to="`/libro/${book.titulo.toLowerCase().replace(/\s+/g, '-')}`">
-              <img :src="book.portada" class="w-full h-48 object-cover rounded" />
+              <img :src="book.portada" class="w-full h-55 object-cover rounded" />
               <h3 class="mt-2 font-semibold truncate">{{ book.titulo }}</h3>
               <p class="text-sm text-gray-500">{{ book.autor }}</p>
             </router-link>
@@ -76,18 +77,18 @@ export default {
       books: [],
       selectedCategory: '',
       selectedAuthor: '',
-      sortBy: 'fecha',
+      sortBy: 'alfabetico',
       categorias: CATEGORIES,
     };
   },
   computed: {
     categories() {
-      const cats = this.books.map(book => book.categoria).filter(Boolean);
-      return [...new Set(cats)];
+      return [...this.categorias].sort((a, b) => a.localeCompare(b));
     },
     authors() {
       const authors = this.books.map(book => book.autor).filter(Boolean);
-      return [...new Set(authors)];
+      const uniqueAuthors = [...new Set(authors)];
+      return uniqueAuthors.sort((a, b) => a.localeCompare(b));
     },
     filteredBooks() {
       return this.books.filter(book => {
@@ -103,6 +104,8 @@ export default {
             return (b.favoritos || 0) - (a.favoritos || 0);
           case 'capitulos':
             return (b.capitulos?.length || 0) - (a.capitulos?.length || 0);
+          case 'alfabetico':
+            return a.titulo.localeCompare(b.titulo);
           case 'fecha':
           default:
             return (b.createdAt || 0) - (a.createdAt || 0);

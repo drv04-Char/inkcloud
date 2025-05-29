@@ -5,7 +5,7 @@
     <!-- Info usuario -->
     <div class="mb-8 space-y-4">
       <div>
-        <label class="font-semibold">Nombre:</label>
+        <label class="font-semibold">Nombre: </label>
         <div v-if="!editandoNombre" class="inline-flex items-center space-x-2">
           <span>{{ userData?.nombre || 'Cargando...' }}</span>
           <button @click="editandoNombre = true" class="text-blue-600 hover:underline text-sm">Editar</button>
