@@ -39,7 +39,6 @@
             <option value="alfabetico">Alfabéticamente (A-Z)</option>
             <option value="fecha">Fecha de creación</option>
             <option value="favoritos">Favoritos</option>
-            <option value="capitulos">Cantidad de capítulos</option>
           </select>
         </div>
       </div>
@@ -102,8 +101,6 @@ export default {
         switch (this.sortBy) {
           case 'favoritos':
             return (b.favoritos || 0) - (a.favoritos || 0);
-          case 'capitulos':
-            return (b.capitulos?.length || 0) - (a.capitulos?.length || 0);
           case 'alfabetico':
             return a.titulo.localeCompare(b.titulo);
           case 'fecha':

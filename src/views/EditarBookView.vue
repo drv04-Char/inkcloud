@@ -185,6 +185,7 @@ export default {
         capitulos: updatedChapters,
         updatedAt: Date.now(),
         categorias: this.selectedCategories,
+        keywords: `${this.title} ${this.author}`.toLowerCase(),
       };
 
       await update(ref(db, `Libros/${bookId}`), updatedBook);

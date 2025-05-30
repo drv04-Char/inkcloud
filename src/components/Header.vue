@@ -184,10 +184,19 @@ export default {
       this.searchResults = this.allBooks
         .filter((book) => {
           const keywords = book.keywords?.toLowerCase() || '';
-          const fullMatch = keywords.includes(term);
-          const keywordWords = keywords.split(/\s|,|\./);
-          const partialMatch = keywordWords.some((word) => word.includes(term));
-          return fullMatch || partialMatch;
+          // Eliminar tildes, signos y normalizar espacios
+          const clean = (str) =>
+            str
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, '') // quitar tildes
+              .replace(/[^\w\s]/gi, '') // quitar símbolos
+              .replace(/\s+/g, ' ') // normalizar espacios
+              .trim();
+
+          const normalizedKeywords = clean(keywords);
+          const normalizedTerm = clean(term);
+
+          // Coincidencia por substring directa
+          return normalizedKeywords.includes(normalizedTerm);
         })
         .slice(0, 7);
     },

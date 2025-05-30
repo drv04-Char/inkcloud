@@ -137,7 +137,7 @@
           capitulos: uploadedChapters,
           comentarios: [],
           createdAt: Date.now(),
-          keywords: this.title.toLowerCase(),
+          keywords: `${this.title} ${this.author}`.toLowerCase(),
           categorias: this.selectedCategories,
         };
   
