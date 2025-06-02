@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { requireAuth } from './authGuard'
 import HomeView from '../views/HomeView.vue'
 import BookDetailView from '../views/BookDetailView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -14,8 +15,8 @@ const routes = [
     { path: '/libros', name: 'all-books', component: () => import('../views/AllBookList.vue') },
     { path: '/login', component: LoginView },
     { path: '/register', name: 'register', component: RegisterView },
-    { path: '/crear-libro', name: 'crear-libro', component: CreateBookView, meta: { requiresAdmin: true } },
-    { path: '/editar-libro/:id', name: 'editar-libro', component: EditarBookView, meta: { requiresAdmin: true } },
+    { path: '/crear-libro', name: 'crear-libro', component: CreateBookView, beforeEnter: requireAuth({ admin: true }) },
+    { path: '/editar-libro/:id', name: 'editar-libro', component: EditarBookView, beforeEnter: requireAuth({ admin: true }) },
     { path: '/perfil', name: 'perfil', component: UserProfile, meta: { requiresAuth: true } },
     { path: '/libro/:bookId/:chapterId', component: ChapterReader },
 ]
