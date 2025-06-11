@@ -70,7 +70,7 @@
         <!-- Derecha móvil: buscador + usuario + hamburguesa -->
         <div class="flex items-center space-x-4 md:hidden">
           <!-- Buscador móvil -->
-          <div class="relative w-36">
+          <div class="relative w-48">
             <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
               <font-awesome-icon :icon="['fas', 'magnifying-glass']" class="text-gray-400" />
             </div>
@@ -81,6 +81,19 @@
               placeholder="Buscar..."
               class="w-full pl-8 p-1.5 rounded text-white bg-gray-700 placeholder-gray-300 focus:outline-none text-sm"
             />
+            <ul
+              v-if="searchResults.length > 0"
+              class="absolute z-50 w-full bg-white text-black shadow-md mt-1 rounded max-h-60 overflow-y-auto"
+            >
+              <li
+                v-for="(book, index) in searchResults"
+                :key="index"
+                class="p-2 hover:bg-gray-100 cursor-pointer"
+                @click="selectBook(book)"
+              >
+                {{ book.titulo }}
+              </li>
+            </ul>
           </div>
 
           <!-- Usuario móvil -->
